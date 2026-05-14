@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CatálogoAPI — Início</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .hero {
+      min-height: calc(100vh - 65px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(240,224,64,0.07) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: breathe 6s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+      50%       { transform: translate(-50%,-50%) scale(1.1); opacity: 0.6; }
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 0.35rem 1rem;
+      background: rgba(240,224,64,0.1);
+      border: 1px solid rgba(240,224,64,0.3);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      animation: fadeUp 0.6s ease both;
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    .hero h1 .yellow { color: var(--accent); }
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 500px;
+      margin-bottom: 2.5rem;
+      line-height: 1.6;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+    .hero-btns {
+      display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border-top: 1px solid var(--border);
+    }
+    .feature { background: var(--surface); padding: 2rem; transition: background 0.2s; }
+    .feature:hover { background: var(--surface2); }
+    .feature-icon { font-size: 1.8rem; margin-bottom: 0.8rem; }
+    .feature h3 { font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 0.5rem; }
+    .feature p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<nav>
+  <a class="logo" href="index.html">📦 Catálogo<span>API</span></a>
+  <div class="nav-links">
+    <button class="btn btn-ghost" id="nav-produtos" onclick="window.location.href='produtos.html'" style="display:none">Produtos</button>
+    <div id="user-display" style="display:none">
+      <span class="dot"></span>
+      <span id="user-name-nav"></span>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btn-sair" onclick="sair()" style="display:none">Sair</button>
+    <button class="btn btn-ghost" id="btn-entrar" onclick="window.location.href='login.html'">Entrar</button>
+    <button class="btn btn-accent" id="btn-criar-conta" onclick="window.location.href='registro.html'">Criar conta</button>
+  </div>
+</nav>
+
+<main>
+  <div class="hero">
+    <div class="hero-badge">API REST · Node.js · MongoDB</div>
+    <h1>Gerencie seu<br><span class="yellow">catálogo de produtos</span></h1>
+    <p>Plataforma completa com autenticação JWT, CRUD de produtos e atributos dinâmicos.</p>
+    <div class="hero-btns">
+      <button class="btn btn-accent" onclick="window.location.href='produtos.html'">Ver produtos</button>
+      <button class="btn btn-ghost" onclick="window.location.href='registro.html'">Criar conta grátis</button>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">🔐</div>
+      <h3>Autenticação JWT</h3>
+      <p>Registro e login com tokens seguros. Senhas criptografadas com BCrypt.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📦</div>
+      <h3>CRUD Completo</h3>
+      <p>Crie, leia, edite e delete produtos com validações e controle de acesso.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🧩</div>
+      <h3>Atributos Dinâmicos</h3>
+      <p>Aproveite o NoSQL para adicionar atributos personalizados a cada produto.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🛡️</div>
+      <h3>Segurança</h3>
+      <p>Proteção contra NoSQL Injection com express-mongo-sanitize e Helmet.</p>
+    </div>
+  </div>
+</main>
+
+<div class="status-bar">
+  <div class="status-dot" id="status-dot"></div>
+  <span id="status-text">Verificando API...</span>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

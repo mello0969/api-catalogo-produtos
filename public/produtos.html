@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CatálogoAPI — Produtos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    main { padding: 2.5rem; padding-bottom: 6rem; }
+
+    /* ── HEADER ── */
+    .dash-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .dash-header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+    }
+    .dash-header h1 span { color: var(--accent); }
+    .dash-header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+
+    /* ── STATS ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .stat:hover { border-color: rgba(240,224,64,0.3); }
+    .stat-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .stat-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.25rem; }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.65rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { outline: none; border-color: var(--accent); }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--surface2); }
+    th {
+      padding: 1rem 1.2rem;
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    td {
+      padding: 1rem 1.2rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+      vertical-align: middle;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .price { font-family: 'Syne', sans-serif; font-weight: 700; color: var(--accent); }
+    .td-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--muted); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: modalIn 0.25s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.96) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .modal-header h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.3rem; }
+    .modal-close {
+      background: none; border: none;
+      color: var(--muted); font-size: 1.4rem;
+      cursor: pointer; line-height: 1; padding: 0.2rem 0.5rem; border-radius: 6px;
+    }
+    .modal-close:hover { background: var(--surface2); color: var(--text); }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+
+    /* ── ATRIBUTOS ── */
+    .atrib-section {
+      margin-top: 0.5rem;
+      padding: 1rem;
+      background: var(--surface2);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+    }
+    .atrib-section h4 {
+      font-size: 0.8rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem;
+    }
+    .atrib-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .atrib-row input {
+      flex: 1; padding: 0.5rem 0.75rem;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 0.85rem;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .atrib-row input:focus { outline: none; border-color: var(--accent); }
+    .atrib-row .btn-remove-atrib {
+      padding: 0.5rem 0.75rem; border-radius: 6px; border: none; cursor: pointer;
+      background: rgba(255,77,77,0.1); color: var(--danger);
+      border: 1px solid rgba(255,77,77,0.3); font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+    .atrib-row .btn-remove-atrib:hover { background: rgba(255,77,77,0.2); }
+    .btn-add-atrib {
+      width: 100%; margin-top: 0.5rem; padding: 0.55rem;
+      background: rgba(240,224,64,0.07); color: var(--accent);
+      border: 1px solid rgba(240,224,64,0.25) !important;
+      border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+      font-family: 'DM Sans', sans-serif; transition: background 0.2s;
+    }
+    .btn-add-atrib:hover { background: rgba(240,224,64,0.13); }
+
+    /* ── BANNER LOGIN ── */
+    .login-banner {
+      background: rgba(240,224,64,0.06);
+      border: 1px solid rgba(240,224,64,0.2);
+      border-radius: 10px;
+      padding: 1rem 1.4rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .login-banner span b { color: var(--accent); }
+
+    @media (max-width: 640px) {
+      main { padding: 1rem; }
+      th:nth-child(4), td:nth-child(4),
+      th:nth-child(5), td:nth-child(5) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<nav>
+  <a class="logo" href="index.html">📦 Catálogo<span>API</span></a>
+  <div class="nav-links">
+    <button class="btn btn-ghost" id="nav-produtos" style="display:none" onclick="window.location.href='produtos.html'">Produtos</button>
+    <div id="user-display" style="display:none">
+      <span class="dot"></span>
+      <span id="user-name-nav"></span>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btn-sair" onclick="sair()" style="display:none">Sair</button>
+    <button class="btn btn-ghost" id="btn-entrar" onclick="window.location.href='login.html'">Entrar</button>
+    <button class="btn btn-accent" id="btn-criar-conta" onclick="window.location.href='registro.html'">Criar conta</button>
+  </div>
+</nav>
+
+<main>
+  <div class="dash-header">
+    <div>
+      <h1>CATÁLOGO DE <span>PRODUTOS</span></h1>
+      <p>Explore e gerencie todos os produtos cadastrados</p>
+    </div>
+    <button class="btn btn-accent" id="btn-novo-produto" onclick="abrirModal()" style="display:none">+ Novo Produto</button>
+  </div>
+
+  <!-- Banner para usuários não logados -->
+  <div class="login-banner" id="login-banner" style="display:none">
+    <span>Faça login para <b>criar, editar e excluir</b> produtos.</span>
+    <div style="display:flex;gap:0.75rem">
+      <a href="login.html" class="btn btn-ghost btn-sm">Entrar</a>
+      <a href="registro.html" class="btn btn-accent btn-sm">Criar conta</a>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num" id="stat-total">—</div>
+      <div class="stat-label">Total de Produtos</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-ativos">—</div>
+      <div class="stat-label">Produtos Ativos</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-categorias">—</div>
+      <div class="stat-label">Categorias</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search-input" id="busca" placeholder="🔍 Buscar por nome, categoria ou descrição..." oninput="buscarProdutos()"/>
+    <button class="btn btn-ghost" onclick="carregarProdutos()">↻ Recarregar</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Categoria</th>
+          <th>Preço</th>
+          <th>Estoque</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-produtos">
+        <tr><td colspan="6"><div class="empty-state"><div class="icon">⏳</div><p>Carregando produtos...</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- MODAL PRODUTO -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Novo Produto</h2>
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nome do Produto *</label>
+        <input type="text" id="p-nome" placeholder="Ex: Notebook Pro"/>
+      </div>
+      <div class="form-group">
+        <label>Categoria *</label>
+        <input type="text" id="p-cat" placeholder="Ex: Eletrônicos"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Descrição *</label>
+      <textarea id="p-desc" placeholder="Descreva o produto..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Preço (R$) *</label>
+        <input type="number" id="p-preco" placeholder="0.00" step="0.01" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Estoque *</label>
+        <input type="number" id="p-estoque" placeholder="0" min="0"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Status</label>
+      <select id="p-ativo">
+        <option value="true">✅ Ativo</option>
+        <option value="false">❌ Inativo</option>
+      </select>
+    </div>
+
+    <div class="atrib-section">
+      <h4>🧩 Atributos Dinâmicos (Opcionais)</h4>
+      <div id="atributos-container"></div>
+      <button class="btn-add-atrib" onclick="adicionarAtributo()">+ Adicionar Atributo</button>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-accent" id="btn-salvar" onclick="salvarProduto()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-dot" id="status-dot"></div>
+  <span id="status-text">Verificando API...</span>
+</div>
+
+<script src="app.js"></script>
+<script>
+let editandoId    = null;
+let todosProdutos = [];
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  // Botão novo produto só aparece se logado
+  if (isLoggedIn()) {
+    document.getElementById('btn-novo-produto').style.display = '';
+  } else {
+    document.getElementById('login-banner').style.display = '';
+  }
+  carregarProdutos();
+
+  // Fechar modal clicando fora
+  document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) fecharModal();
+  });
+});
+
+// ── PRODUTOS ──
+async function carregarProdutos() {
+  document.getElementById('tabela-produtos').innerHTML =
+    '<tr><td colspan="6"><div class="empty-state"><div class="icon">⏳</div><p>Carregando...</p></div></td></tr>';
+  try {
+    const res  = await fetch(`${API}/produtos?limite=100`);
+    const data = await res.json();
+    todosProdutos = data.produtos || [];
+    renderizarProdutos(todosProdutos);
+    atualizarStats(todosProdutos);
+  } catch {
+    document.getElementById('tabela-produtos').innerHTML =
+      '<tr><td colspan="6"><div class="empty-state"><div class="icon">⚠️</div><p>Erro ao carregar produtos.<br>Verifique se o servidor está rodando.</p></div></td></tr>';
+  }
+}
+
+function atualizarStats(produtos) {
+  document.getElementById('stat-total').textContent      = produtos.length;
+  document.getElementById('stat-ativos').textContent     = produtos.filter(p => p.ativo).length;
+  const cats = new Set(produtos.map(p => p.categoria));
+  document.getElementById('stat-categorias').textContent = cats.size;
+}
+
+function buscarProdutos() {
+  const q = document.getElementById('busca').value.toLowerCase();
+  const filtrados = q
+    ? todosProdutos.filter(p =>
+        p.nome.toLowerCase().includes(q) ||
+        p.categoria.toLowerCase().includes(q) ||
+        (p.descricao || '').toLowerCase().includes(q)
+      )
+    : todosProdutos;
+  renderizarProdutos(filtrados);
+}
+
+function renderizarProdutos(produtos) {
+  const logado = isLoggedIn();
+  const tbody  = document.getElementById('tabela-produtos');
+
+  if (!produtos.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">📦</div><p>Nenhum produto encontrado.</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = produtos.map(p => {
+    const desc = (p.descricao || '').substring(0, 60) + (p.descricao?.length > 60 ? '...' : '');
+    const acoes = logado
+      ? `<button class="btn btn-ghost btn-sm" onclick="editarProduto('${p._id}')">✏️ Editar</button>
+         <button class="btn btn-danger btn-sm" onclick="deletarProduto('${p._id}', '${p.nome.replace(/'/g, "\\'")}')">🗑 Excluir</button>`
+      : `<span style="color:var(--muted);font-size:0.8rem">—</span>`;
+
+    return `
+      <tr>
+        <td>
+          <strong>${p.nome}</strong>
+          ${desc ? `<br><span style="font-size:0.78rem;color:var(--muted)">${desc}</span>` : ''}
+        </td>
+        <td><span class="badge badge-cat">${p.categoria}</span></td>
+        <td class="price">R$ ${Number(p.preco).toFixed(2)}</td>
+        <td>${p.estoque} un.</td>
+        <td><span class="badge ${p.ativo ? 'badge-active' : 'badge-inactive'}">${p.ativo ? 'Ativo' : 'Inativo'}</span></td>
+        <td class="td-actions">${acoes}</td>
+      </tr>`;
+  }).join('');
+}
+
+// ── ATRIBUTOS ──
+function adicionarAtributo(chave = '', valor = '') {
+  const container = document.getElementById('atributos-container');
+  const div = document.createElement('div');
+  div.className = 'atrib-row';
+  div.innerHTML = `
+    <input type="text" placeholder="Chave (ex: cor)"    value="${chave}" class="atrib-chave"/>
+    <input type="text" placeholder="Valor (ex: Azul)"   value="${valor}" class="atrib-valor"/>
+    <button class="btn-remove-atrib" onclick="this.parentElement.remove()">✕</button>`;
+  container.appendChild(div);
+}
+
+function getAtributos() {
+  const atributos = {};
+  document.querySelectorAll('.atrib-row').forEach(row => {
+    const chave = row.querySelector('.atrib-chave').value.trim();
+    const valor = row.querySelector('.atrib-valor').value.trim();
+    if (chave) atributos[chave] = valor;
+  });
+  return atributos;
+}
+
+// ── MODAL ──
+function abrirModal(produto = null) {
+  if (!isLoggedIn()) { window.location.href = 'login.html'; return; }
+
+  editandoId = produto ? produto._id : null;
+  document.getElementById('modal-title').textContent = produto ? 'Editar Produto' : 'Novo Produto';
+  document.getElementById('p-nome').value    = produto?.nome        || '';
+  document.getElementById('p-desc').value    = produto?.descricao   || '';
+  document.getElementById('p-preco').value   = produto?.preco       ?? '';
+  document.getElementById('p-cat').value     = produto?.categoria   || '';
+  document.getElementById('p-estoque').value = produto?.estoque     ?? '';
+  document.getElementById('p-ativo').value   = produto?.ativo !== undefined ? String(produto.ativo) : 'true';
+
+  // Atributos dinâmicos
+  document.getElementById('atributos-container').innerHTML = '';
+  if (produto?.atributos && typeof produto.atributos === 'object') {
+    Object.entries(produto.atributos).forEach(([k, v]) => adicionarAtributo(k, String(v)));
+  }
+
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('p-nome').focus(), 100);
+}
+
+function fecharModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editandoId = null;
+}
+
+async function salvarProduto() {
+  const nome     = document.getElementById('p-nome').value.trim();
+  const descricao = document.getElementById('p-desc').value.trim();
+  const preco    = parseFloat(document.getElementById('p-preco').value);
+  const categoria = document.getElementById('p-cat').value.trim();
+  const estoque  = parseInt(document.getElementById('p-estoque').value);
+  const ativo    = document.getElementById('p-ativo').value === 'true';
+
+  if (!nome || !descricao || isNaN(preco) || !categoria || isNaN(estoque)) {
+    showToast('Preencha todos os campos obrigatórios (*).', 'error');
+    return;
+  }
+
+  const body   = { nome, descricao, preco, categoria, estoque, ativo, atributos: getAtributos() };
+  const url    = editandoId ? `${API}/produtos/${editandoId}` : `${API}/produtos`;
+  const method = editandoId ? 'PUT' : 'POST';
+
+  const btn = document.getElementById('btn-salvar');
+  btn.innerHTML = '<span class="spinner"></span> Salvando...';
+  btn.disabled  = true;
+
+  try {
+    const res  = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+
+    if (data.sucesso) {
+      fecharModal();
+      carregarProdutos();
+      showToast(editandoId ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!');
+    } else {
+      showToast(data.mensagem, 'error');
+    }
+  } catch {
+    showToast('Erro ao salvar produto.', 'error');
+  } finally {
+    btn.innerHTML = 'Salvar';
+    btn.disabled  = false;
+  }
+}
+
+function editarProduto(id) {
+  const produto = todosProdutos.find(p => p._id === id);
+  if (produto) abrirModal(produto);
+}
+
+async function deletarProduto(id, nome) {
+  if (!confirm(`Excluir "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+  try {
+    const res  = await fetch(`${API}/produtos/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const data = await res.json();
+    if (data.sucesso) {
+      carregarProdutos();
+      showToast('Produto excluído!');
+    } else {
+      showToast(data.mensagem, 'error');
+    }
+  } catch {
+    showToast('Erro ao excluir produto.', 'error');
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CatálogoAPI — Entrar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .auth-page {
+      min-height: calc(100vh - 65px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem 6rem;
+    }
+
+    .auth-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      animation: fadeUp 0.5s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-header { margin-bottom: 2rem; }
+    .auth-header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 0.4rem;
+    }
+    .auth-header h1 span { color: var(--accent); }
+    .auth-header p { color: var(--muted); font-size: 0.9rem; }
+
+    .auth-submit {
+      width: 100%;
+      padding: 0.85rem;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .auth-msg {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      display: none;
+    }
+    .auth-msg.error   { background: rgba(255,77,77,0.1);  color: var(--danger);  border: 1px solid rgba(255,77,77,0.3);  display: block; }
+    .auth-msg.success { background: rgba(77,255,145,0.1); color: var(--success); border: 1px solid rgba(77,255,145,0.3); display: block; }
+
+    .auth-footer {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .auth-footer a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    .auth-footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<nav>
+  <a class="logo" href="index.html">📦 Catálogo<span>API</span></a>
+  <div class="nav-links">
+    <button class="btn btn-ghost" id="nav-produtos" onclick="window.location.href='produtos.html'" style="display:none">Produtos</button>
+    <div id="user-display" style="display:none">
+      <span class="dot"></span>
+      <span id="user-name-nav"></span>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btn-sair" onclick="sair()" style="display:none">Sair</button>
+    <button class="btn btn-ghost" id="btn-entrar" style="display:none"></button>
+    <button class="btn btn-ghost" id="btn-criar-conta" onclick="window.location.href='registro.html'">Criar conta</button>
+  </div>
+</nav>
+
+<div class="auth-page">
+  <div class="auth-box">
+    <div class="auth-header">
+      <h1>Bem-vindo <span>de volta</span></h1>
+      <p>Entre com sua conta para gerenciar os produtos.</p>
+    </div>
+
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" id="login-email" placeholder="seu@email.com" autofocus
+        onkeydown="if(event.key==='Enter') document.getElementById('login-senha').focus()"/>
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="login-senha" placeholder="••••••"
+        onkeydown="if(event.key==='Enter') fazerLogin()"/>
+    </div>
+
+    <button class="btn btn-accent auth-submit" id="btn-login" onclick="fazerLogin()">Entrar</button>
+    <div class="auth-msg" id="login-msg"></div>
+
+    <div class="auth-footer">
+      Não tem conta? <a href="registro.html">Criar conta grátis</a>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-dot" id="status-dot"></div>
+  <span id="status-text">Verificando API...</span>
+</div>
+
+<script src="app.js"></script>
+<script>
+  // CORRIGIDO: dentro do DOMContentLoaded para garantir que app.js já carregou
+  document.addEventListener('DOMContentLoaded', () => {
+    if (isLoggedIn()) window.location.href = 'produtos.html';
+  });
+
+  async function fazerLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const senha = document.getElementById('login-senha').value;
+    const msg   = document.getElementById('login-msg');
+    const btn   = document.getElementById('btn-login');
+
+    if (!email || !senha) {
+      msg.className = 'auth-msg error';
+      msg.textContent = 'Preencha e-mail e senha.';
+      return;
+    }
+
+    btn.innerHTML = '<span class="spinner"></span> Entrando...';
+    btn.disabled = true;
+
+    try {
+      const res  = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha })
+      });
+      const data = await res.json();
+
+      if (data.sucesso) {
+        setSession(data.token, data.usuario.nome);
+        msg.className = 'auth-msg success';
+        msg.textContent = `Bem-vindo, ${data.usuario.nome}! Redirecionando...`;
+        setTimeout(() => window.location.href = 'produtos.html', 800);
+      } else {
+        msg.className = 'auth-msg error';
+        msg.textContent = data.mensagem;
+        btn.innerHTML = 'Entrar';
+        btn.disabled  = false;
+      }
+    } catch {
+      msg.className = 'auth-msg error';
+      msg.textContent = 'Erro ao conectar na API. Verifique se o servidor está rodando.';
+      btn.innerHTML = 'Entrar';
+      btn.disabled  = false;
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CatálogoAPI — Criar Conta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .auth-page {
+      min-height: calc(100vh - 65px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem 6rem;
+    }
+
+    .auth-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      animation: fadeUp 0.5s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-header { margin-bottom: 2rem; }
+    .auth-header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 0.4rem;
+    }
+    .auth-header h1 span { color: var(--accent); }
+    .auth-header p { color: var(--muted); font-size: 0.9rem; }
+
+    .auth-submit {
+      width: 100%;
+      padding: 0.85rem;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .auth-msg {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      display: none;
+    }
+    .auth-msg.error   { background: rgba(255,77,77,0.1);  color: var(--danger);  border: 1px solid rgba(255,77,77,0.3);  display: block; }
+    .auth-msg.success { background: rgba(77,255,145,0.1); color: var(--success); border: 1px solid rgba(77,255,145,0.3); display: block; }
+
+    .auth-footer {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .auth-footer a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    .senha-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<nav>
+  <a class="logo" href="index.html">📦 Catálogo<span>API</span></a>
+  <div class="nav-links">
+    <button class="btn btn-ghost" id="nav-produtos" onclick="window.location.href='produtos.html'" style="display:none">Produtos</button>
+    <div id="user-display" style="display:none">
+      <span class="dot"></span>
+      <span id="user-name-nav"></span>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btn-sair" onclick="sair()" style="display:none">Sair</button>
+    <button class="btn btn-ghost" id="btn-entrar" onclick="window.location.href='login.html'">Entrar</button>
+    <button class="btn btn-accent" id="btn-criar-conta" style="display:none"></button>
+  </div>
+</nav>
+
+<div class="auth-page">
+  <div class="auth-box">
+    <div class="auth-header">
+      <h1>Criar <span>conta</span></h1>
+      <p>Registre-se para começar a gerenciar produtos.</p>
+    </div>
+
+    <div class="form-group">
+      <label>Nome completo</label>
+      <input type="text" id="reg-nome" placeholder="Seu nome" autofocus
+        onkeydown="if(event.key==='Enter') document.getElementById('reg-email').focus()"/>
+    </div>
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" id="reg-email" placeholder="seu@email.com"
+        onkeydown="if(event.key==='Enter') document.getElementById('reg-senha').focus()"/>
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="reg-senha" placeholder="Mínimo 6 caracteres"
+        onkeydown="if(event.key==='Enter') registrar()"/>
+      <p class="senha-hint">Use pelo menos 6 caracteres.</p>
+    </div>
+
+    <button class="btn btn-accent auth-submit" id="btn-registro" onclick="registrar()">Criar Conta</button>
+    <div class="auth-msg" id="reg-msg"></div>
+
+    <div class="auth-footer">
+      Já tem conta? <a href="login.html">Entrar</a>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-dot" id="status-dot"></div>
+  <span id="status-text">Verificando API...</span>
+</div>
+
+<script src="app.js"></script>
+<script>
+  // CORRIGIDO: movido para dentro do DOMContentLoaded para garantir que app.js já carregou
+  document.addEventListener('DOMContentLoaded', () => {
+    if (isLoggedIn()) window.location.href = 'produtos.html';
+  });
+
+  async function registrar() {
+    const nome  = document.getElementById('reg-nome').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const senha = document.getElementById('reg-senha').value;
+    const msg   = document.getElementById('reg-msg');
+    const btn   = document.getElementById('btn-registro');
+
+    // Resetar mensagem anterior
+    msg.className = 'auth-msg';
+    msg.textContent = '';
+
+    if (!nome || !email || !senha) {
+      msg.className = 'auth-msg error';
+      msg.textContent = 'Preencha todos os campos.';
+      return;
+    }
+    if (senha.length < 6) {
+      msg.className = 'auth-msg error';
+      msg.textContent = 'A senha deve ter ao menos 6 caracteres.';
+      return;
+    }
+
+    btn.innerHTML = '<span class="spinner"></span> Criando conta...';
+    btn.disabled  = true;
+
+    try {
+      const res = await fetch(`${API}/auth/registro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, email, senha })
+      });
+
+      // CORRIGIDO: verifica se a resposta é JSON antes de parsear
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Resposta inválida do servidor');
+      }
+
+      const data = await res.json();
+
+      if (data.sucesso) {
+        setSession(data.token, data.usuario.nome);
+        msg.className = 'auth-msg success';
+        msg.textContent = `Conta criada! Bem-vindo, ${data.usuario.nome}! Redirecionando...`;
+        setTimeout(() => window.location.href = 'produtos.html', 1000);
+      } else {
+        msg.className = 'auth-msg error';
+        msg.textContent = data.mensagem || 'Erro ao criar conta.';
+        btn.innerHTML = 'Criar Conta';
+        btn.disabled  = false;
+      }
+    } catch (err) {
+      console.error('Erro no registro:', err);
+      msg.className = 'auth-msg error';
+      msg.textContent = 'Erro ao conectar na API. Verifique se o servidor está rodando.';
+      btn.innerHTML = 'Criar Conta';
+      btn.disabled  = false;
+    }
+  }
+</script>
+</body>
+</html>
